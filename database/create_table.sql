@@ -168,6 +168,15 @@ CREATE TABLE booking_hotel (
     FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE CASCADE
 );
 
+-- Booking-Flight Junction Table (Added to support trigger)
+CREATE TABLE booking_flight (
+  booking_flight_id INT PRIMARY KEY AUTO_INCREMENT,
+  booking_id INT NOT NULL,
+  flight_id INT NOT NULL,
+  FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE CASCADE,
+  FOREIGN KEY (flight_id) REFERENCES flight(flight_id) ON DELETE CASCADE,
+  UNIQUE (booking_id, flight_id) -- Optional: prevent duplicate selection
+);
 
 CREATE INDEX idx_booking_customer ON booking(customer_id);            -- needed for customer-booking lookups
 CREATE INDEX idx_trip_type ON trip(trip_type);                        -- filtering by trip type (e.g., adventure, cultural)

@@ -50,5 +50,28 @@ BEGIN
     WHERE trip_id = v_trip_id;
 END$$
 
+-- 4. Validate round trip flight selection
+CREATE TRIGGER trg_validate_round_trip_flight
+BEFORE INSERT ON booking_flight
+FOR EACH ROW
+BEGIN
+  DECLARE existing_arrival INT;
+
+  -- Get the arrival location of the existing flight
+  SELECT f.arrival_location_id INTO existing_arrival
+  FROM booking_flight bf
+  JOIN flight f ON bf.flight_id = f.flight_id
+  WHERE bf.booking_id = NEW.booking_id
+  LIMIT 1;
+
+  -- Check if departure of new flight matches arrival of existing
+  IF existing_arrival IS NOT NULL THEN
+    IF (SELECT departure_location_id FROM flight WHERE flight_id = NEW.flight_id) != existing_arrival THEN
+      SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Return flight must depart from the city you arrived in.';
+    END IF;
+  END IF;
+END$$
+
 
 DELIMITER ;

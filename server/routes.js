@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const pool = require('./db');
 
-// GET /api/trips → returns all available trips
+
+// GET → returns all available trips
 router.get('/trips', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM view_trip_catalog');
@@ -13,6 +14,7 @@ router.get('/trips', async (req, res) => {
   }
 });
 
+// GET → returns the top 5 booked trips
 router.get('/trips/top-booked', async (req, res) => {
   try {
     const [rows] = await pool.query('CALL sp_top_booked_trips()');
@@ -23,6 +25,7 @@ router.get('/trips/top-booked', async (req, res) => {
   }
 });
 
+// GET → returns all available insurance options 
 router.get('/insurance-options', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM travel_insurance_option');
@@ -33,37 +36,43 @@ router.get('/insurance-options', async (req, res) => {
   }
 });
 
-// GET /api/bookings/confirmation/:code → returns booking details by confirmation code
-router.get('/bookings/confirmation/:code', async (req, res) => {
-  const { code } = req.params;
-  const pool = require('./db');
 
+// GET → returns booking details by confirmation code
+router.get('/bookings/by-code/:code', async (req, res) => {
+  const { code } = req.params;
   try {
     const [rows] = await pool.query(
-      `SELECT * FROM view_booking_summary WHERE confirmation_code = ?`,
-      [confirmationCode]
+      `SELECT * FROM booking WHERE confirmation_code = ?`,
+      [code]
     );
 
     if (rows.length === 0) {
+      res.setHeader('Content-Type', 'application/json');
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
+
+    res.setHeader('Content-Type', 'application/json');
     res.json({ success: true, booking: rows[0] });
   } catch (err) {
     console.error('❌ Lookup failed:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ success: false, error: err && err.message ? err.message : 'Internal server error' });
   }
 });
 
-// POST /api/bookings/cancel → cancels a booking by confirmation code
+
+// POST → cancels a booking by confirmation code
 router.post('/bookings/cancel', async (req, res) => {
   const { confirmationCode } = req.body;
   const pool = require('./db');
+
 
   try {
     if (!confirmationCode) {
       return res.status(400).json({ success: false, message: 'Missing confirmation code' });
     }
+
 
     // Step 1: Find the booking ID from the confirmation code
     const [rows] = await pool.query(
@@ -71,14 +80,18 @@ router.post('/bookings/cancel', async (req, res) => {
       [confirmationCode]
     );
 
+
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
+
     const bookingId = rows[0].booking_id;
+
 
     // Step 2: Call the stored procedure to cancel
     await pool.query(`CALL sp_cancel_booking(?)`, [bookingId]);
+
 
     res.json({ success: true, message: 'Booking cancelled successfully.' });
   } catch (err) {
@@ -87,7 +100,8 @@ router.post('/bookings/cancel', async (req, res) => {
   }
 });
 
-// POST /api/bookings → creates a new booking
+
+// POST → creates a new booking
 router.post('/bookings', async (req, res) => {
   const pool = require('./db');
   const {
@@ -98,17 +112,21 @@ router.post('/bookings', async (req, res) => {
     customer
   } = req.body;
 
+
   const { firstName, middleName, lastName, email, phone } = customer;
+
 
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
+
 
     // 1. Check if customer exists by email
     const [existingCustomer] = await conn.query(
       'SELECT customer_id FROM customer WHERE email = ?',
       [email]
     );
+
 
     let customerId;
     if (existingCustomer.length > 0) {
@@ -122,13 +140,16 @@ router.post('/bookings', async (req, res) => {
       customerId = result.insertId;
     }
 
+
     // 2. Call stored procedure
     const [bookingResult] = await conn.query(
       `CALL sp_add_booking_with_capacity_check(?, ?, ?, ?, ?)`,
       [customerId, tripId, startDate, endDate, insuranceId || null]
     );
 
+
     const { booking_id, confirmation_code, total_price } = bookingResult[0][0];
+
 
     // 3. Link insurance to the booking (optional)
     if (insuranceId) {
@@ -141,7 +162,9 @@ router.post('/bookings', async (req, res) => {
       );
     }
 
+
     await conn.commit();
+
 
     res.status(200).json({
       success: true,
@@ -155,6 +178,73 @@ router.post('/bookings', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   } finally {
     conn.release();
+  }
+});
+
+
+// POST → adds a new rating for a booking
+router.post('/rating', async (req, res) => {
+  const { booking_id, rating_score, feedback } = req.body;
+  try {
+    const [result] = await pool.query(
+      'CALL sp_add_rating(?, ?, ?)',
+      [booking_id, rating_score, feedback]
+    );
+    res.json({ success: true, message: 'Rating added successfully.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST → links a hotel to a booking
+router.post('/booking-hotel', async (req, res) => {
+  const { bookingId, hotelId } = req.body;
+
+
+  try {
+    await pool.query(
+      `INSERT INTO booking_hotel (booking_id, hotel_id) VALUES (?, ?)`,
+      [bookingId, hotelId]
+    );
+
+
+    res.status(200).json({ success: true, message: 'Hotel linked to booking successfully.' });
+  } catch (err) {
+    console.error('Error linking hotel to booking:', err);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// GET → returns all available flights for a trip
+router.get('/flights/by-trip/:tripId', async (req, res) => {
+  const { tripId } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM flight WHERE trip_id = ?`,
+      [tripId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching flights:', err);
+    res.status(500).json({ error: 'Failed to fetch flights' });
+  }
+});
+
+// GET → returns all available hotels for a trip
+router.get('/hotels/by-trip/:tripId', async (req, res) => {
+  const { tripId } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT h.hotel_id, h.name, h.city, h.country, h.star_rating
+       FROM hotel h
+       JOIN hotel_trip ht ON h.hotel_id = ht.hotel_id
+       WHERE ht.trip_id = ?`,
+      [tripId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching hotels:', err);
+    res.status(500).json({ error: 'Failed to fetch hotels' });
   }
 });
 
