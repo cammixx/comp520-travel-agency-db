@@ -1,0 +1,70 @@
+
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #f9fafc;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #37c1f8;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Navbar hover effect */
+.link-hover {
+  transition: background-color 0.2s ease-in-out;
+}
+
+.link-hover:hover {
+  font-weight: bold;
+  border-radius: 5px;
+}
+
+.btn-primary {
+  background-color: rgb(47, 166, 120) !important;
+  border-color: rgb(47, 166, 120) !important;
+  color: white !important;
+}
+
+.btn-primary:hover {
+  background-color: rgba(47, 166, 120, 0.9) !important;
+  border-color: rgb(40, 140, 100) !important;
+}
+
+.btn-outline-primary {
+  color: rgb(47, 166, 120) !important;
+  border-color: rgb(47, 166, 120) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: rgb(47, 166, 120) !important;
+  color: white !important;
+}
