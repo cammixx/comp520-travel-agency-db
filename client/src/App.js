@@ -4,8 +4,6 @@ import './App.css';
 import HomePage from './pages/HomePage';
 import TripDetailsPage from './pages/TripDetailsPage';
 import BookingPage from './pages/BookingPage';
-import BookFlightPage from './pages/BookFlightPage';
-import BookHotelPage from './pages/BookHotelPage';
 import RateTripPage from './pages/RateTripPage';
 import BookingLookupForm from './components/BookingLookupForm';
 
@@ -24,12 +22,6 @@ function App() {
                 <Link className="nav-link link-hover" to="/book">Book a Trip</Link>
               </li>
               <li className="nav-item">
-                <Link className="nav-link link-hover" to="/book-flight">Book Flight</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link link-hover" to="/book-hotel">Book Hotel</Link>
-              </li>
-              <li className="nav-item">
                 <Link className="nav-link link-hover" to="/my-booking">Find My Booking</Link>
               </li>
               <li className="nav-item">
@@ -44,8 +36,6 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/trip/:id" element={<TripDetailsPage />} />
         <Route path="/book" element={<BookingPage />} />
-        <Route path="/book-flight" element={<BookFlightPage />} />
-        <Route path="/book-hotel" element={<BookHotelPage />} />
         <Route path="/my-booking" element={<BookingLookupForm />} />
         <Route path="/rate" element={<RateTripPage />} />
       </Routes>

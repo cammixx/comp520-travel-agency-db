@@ -215,37 +215,4 @@ router.post('/booking-hotel', async (req, res) => {
   }
 });
 
-// GET → returns all available flights for a trip
-router.get('/flights/by-trip/:tripId', async (req, res) => {
-  const { tripId } = req.params;
-  try {
-    const [rows] = await pool.query(
-      `SELECT * FROM flight WHERE trip_id = ?`,
-      [tripId]
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error('Error fetching flights:', err);
-    res.status(500).json({ error: 'Failed to fetch flights' });
-  }
-});
-
-// GET → returns all available hotels for a trip
-router.get('/hotels/by-trip/:tripId', async (req, res) => {
-  const { tripId } = req.params;
-  try {
-    const [rows] = await pool.query(
-      `SELECT h.hotel_id, h.name, h.city, h.country, h.star_rating
-       FROM hotel h
-       JOIN hotel_trip ht ON h.hotel_id = ht.hotel_id
-       WHERE ht.trip_id = ?`,
-      [tripId]
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error('Error fetching hotels:', err);
-    res.status(500).json({ error: 'Failed to fetch hotels' });
-  }
-});
-
 module.exports = router;
