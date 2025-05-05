@@ -168,7 +168,7 @@ CREATE TABLE booking_hotel (
     FOREIGN KEY (hotel_id) REFERENCES hotel(hotel_id) ON DELETE CASCADE
 );
 
--- Booking-Flight Junction Table (Added to support trigger)
+-- Booking-Flight Junction Table
 CREATE TABLE booking_flight (
   booking_flight_id INT PRIMARY KEY AUTO_INCREMENT,
   booking_id INT NOT NULL,
