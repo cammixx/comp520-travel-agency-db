@@ -1,48 +1,5 @@
 # Travel Agency Application
 
-A full-stack travel agency application built with React (frontend) and Express.js (backend).
-
-## Project Structure
-
-```
-travel-agency-app/
-├── client/                      # React frontend
-│   ├── public/                  # Static files
-│   │   ├── index.html
-│   │   └── assets/             # Images, fonts, etc.
-│   ├── src/
-│   │   ├── components/         # Reusable UI components
-│   │   │   ├── common/        # Shared components
-│   │   │   ├── layout/        # Layout components
-│   │   │   └── forms/         # Form components
-│   │   ├── pages/             # Page components
-│   │   ├── services/          # API services
-│   │   ├── utils/             # Utility functions
-│   │   ├── hooks/             # Custom React hooks
-│   │   ├── context/           # React context
-│   │   ├── styles/            # Global styles
-│   │   └── App.js             # Root component
-│   ├── package.json
-│   └── .env                    # Frontend environment variables
-│
-├── server/                      # Express.js backend
-│   ├── src/
-│   │   ├── config/            # Configuration files
-│   │   ├── controllers/       # Route controllers
-│   │   ├── middleware/        # Custom middleware
-│   │   ├── models/            # Database models
-│   │   ├── routes/            # API routes
-│   │   ├── services/          # Business logic
-│   │   ├── utils/             # Utility functions
-│   │   └── app.js             # Express app setup
-│   ├── tests/                 # Backend tests
-│   ├── package.json
-│   └── .env                    # Backend environment variables
-│
-├── .gitignore
-└── README.md
-```
-
 ## Prerequisites
 
 - Node.js (v14 or higher)
