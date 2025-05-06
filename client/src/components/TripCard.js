@@ -1,6 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
+import axios from 'axios';
 
 function TripCard({ trip, onBook }) {
+  const [ratingDist, setRatingDist] = useState([]);
+  const [showRatings, setShowRatings] = useState(false);
+
+  const fetchRatings = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5050/api/trips/${trip.trip_id}/ratings`);
+      setRatingDist(res.data);
+      setShowRatings(true);
+    } catch (err) {
+      console.error('Failed to fetch rating distribution:', err);
+    }
+  };
+  async function fetchTripAverageRating(tripId) {
+    const response = await fetch(`http://localhost:5050/api/trips/${tripId}/average-rating`);
+    const data = await response.json();
+    return data.average_rating;
+  }
   return (
     <div className="card h-100 shadow-sm">
       <div className="card-body">
@@ -15,9 +33,24 @@ function TripCard({ trip, onBook }) {
             ? Number(trip.avg_rating).toFixed(1)
             : "No ratings yet"}
         </p>
+
+        <button className="btn btn-primary me-2" onClick={fetchRatings}>View Ratings</button>
         <button className="btn btn-success mt-2" onClick={() => onBook(trip.trip_id)}>
           Book This Trip
         </button>
+
+        {showRatings && (
+          <div className="mt-3">
+            <h6>Rating Breakdown:</h6>
+            <ul>
+              {ratingDist.map((r) => (
+                <li key={r.rating_score}>
+                  {r.rating_score}★: {r.total_ratings}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

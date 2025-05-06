@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { fetchTripList, fetchInsuranceOptions, fetchHotelList, fetchFlightList } from '../api/tripApi';
+import {
+  fetchTripList,
+  fetchInsuranceOptions,
+  fetchHotelList,
+  fetchFlightList
+} from '../api/tripApi';
 
 function BookingForm({ onSubmit, preselectedTripId }) {
   const [tripList, setTripList] = useState([]);
@@ -15,7 +20,6 @@ function BookingForm({ onSubmit, preselectedTripId }) {
   const [selectedHotelId, setSelectedHotelId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');

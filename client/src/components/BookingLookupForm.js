@@ -61,26 +61,29 @@ function BookingLookupForm() {
       {cancelSuccess && <div className="alert alert-success mt-3">{cancelSuccess}</div>}
 
       {booking && (
-        <div className="card p-3 shadow-sm mt-3">
-          <h5 className="mb-2 text-success">{booking.trip_name}</h5>
-          <p><strong>Confirmation Code:</strong> {booking.confirmation_code}</p>
-          <p><strong>Type:</strong> {booking.trip_type}</p>
-          <p><strong>Destination:</strong> {booking.destination}</p>
-          <p>
-            <strong>Dates:</strong> {formatMonthYear(booking.start_date)} to {formatMonthYear(booking.end_date)}
-          </p>
-          <p><strong>Insurance:</strong> {booking.insurance_name}</p>
-          <p><strong>Total Price:</strong> ${booking.total_price}</p>
-          <p><strong>Status:</strong> {booking.booking_status}</p>
-          <button
-            className="btn btn-danger mt-2"
-            disabled={booking.booking_status === 'Cancelled'}
-            onClick={handleCancel}
-          >
-            Cancel Booking
-          </button>
-        </div>
-      )}
+          <div className="card p-3 shadow-sm mt-3">
+            <h5 className="mb-2 text-success">{booking.trip_name}</h5>
+            <p><strong>Confirmation Code:</strong> {booking.confirmation_code}</p>
+            <p><strong>Type:</strong> {booking.trip_type}</p>
+            <p><strong>Destination:</strong> {booking.destination}</p>
+            <p>
+              <strong>Dates:</strong> {formatMonthYear(booking.start_date)} to {formatMonthYear(booking.end_date)}
+            </p>
+            <p><strong>Insurance:</strong> {booking.insurance_name}</p>
+            <p><strong>Total Price:</strong> ${booking.total_price}</p>
+            {booking.total_spent !== undefined && (
+              <p><strong>Total Spending:</strong> ${booking.total_spent}</p>
+            )}
+            <p><strong>Status:</strong> {booking.booking_status}</p>
+            <button
+              className="btn btn-danger mt-2"
+              disabled={booking.booking_status === 'Cancelled'}
+              onClick={handleCancel}
+            >
+              Cancel Booking
+            </button>
+          </div>
+        )}
     </div>
   );
 }

@@ -44,26 +44,27 @@ router.get('/insurance-options', async (req, res) => {
 router.get('/bookings/by-code/:code', async (req, res) => {
   const { code } = req.params;
   try {
-    const [rows] = await pool.query(
-      `SELECT * FROM booking WHERE confirmation_code = ?`,
+    const [bookingRows] = await pool.query(
+      `SELECT * FROM view_booking_details WHERE confirmation_code = ?`,
       [code]
     );
 
-    if (rows.length === 0) {
-      res.setHeader('Content-Type', 'application/json');
+    if (bookingRows.length === 0) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
+    const booking = bookingRows[0];
 
-    res.setHeader('Content-Type', 'application/json');
-    res.json({ success: true, booking: rows[0] });
+    // Call total spending SP
+    const [spendingRows] = await pool.query('CALL sp_get_total_spent(?)', [booking.customer_id]);
+    const totalSpent = spendingRows[0][0]?.total_spent || 0;
+
+    res.json({ success: true, booking: { ...booking, total_spent: totalSpent } });
   } catch (err) {
-    console.error('❌ Lookup failed:', err);
-    res.setHeader('Content-Type', 'application/json');
-    res.status(500).json({ success: false, error: err && err.message ? err.message : 'Internal server error' });
+    console.error(' Lookup failed:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
-
 
 // POST → cancels a booking by confirmation code
 router.post('/bookings/cancel', async (req, res) => {
@@ -222,7 +223,10 @@ router.get('/hotels/by-trip/:tripId', async (req, res) => {
   const { tripId } = req.params;
   try {
     const [rows] = await pool.query(
-      `SELECT * FROM view_available_hotels_by_trip WHERE trip_id = ?`,
+      `SELECT h.hotel_id, h.name, h.city, ht.price_per_night
+       FROM hotel h
+       JOIN hotel_trip ht ON h.hotel_id = ht.hotel_id
+       WHERE ht.trip_id = ?`,
       [tripId]
     );
     res.json(rows);
@@ -236,8 +240,11 @@ router.get('/flights/by-trip/:tripId', async (req, res) => {
   const { tripId } = req.params;
   try {
     const [rows] = await pool.query(
-      `SELECT * FROM view_available_flights_by_trip WHERE trip_id = ?`, 
-      [tripId]);
+      `SELECT flight_id, airline_name, flight_number, departure_datetime, arrival_datetime, price
+       FROM flight
+       WHERE trip_id = ?`,
+      [tripId]
+    );
     res.json(rows);
   } catch (err) {
     console.error('Error fetching flights:', err);
@@ -270,28 +277,44 @@ router.get('/trips/affordable/:budget', async (req, res) => {
 router.get('/trips/cheapest-days', async (req, res) => {
   try {
     const [rows] = await pool.query('CALL sp_predict_cheapest_travel_days()');
-    res.json(rows[0]); // unpack the result
+    res.json(rows[0]); 
   } catch (err) {
     console.error('Error fetching cheapest travel days:', err);
     res.status(500).json({ error: 'Failed to fetch cheapest travel days' });
   }
 });
 
-// returns booking details by confirmation code
-router.get('/bookings/by-code/:code', async (req, res) => {
-  const { code } = req.params;
+router.get('/trips/:tripId/ratings', async (req, res) => {
+  const { tripId } = req.params;
   try {
-    const [rows] = await pool.query(
-      `SELECT * FROM view_booking_details WHERE confirmation_code = ?`,
-      [code]
-    );
-    if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'No booking found.' });
-    }
-    res.json({ success: true, booking: rows[0] });
+    const [rows] = await pool.query('CALL sp_get_rating_distribution(?)', [tripId]);
+    res.json(rows[0]);
   } catch (err) {
-    console.error('❌ Lookup failed:', err);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    console.error('Error fetching rating distribution:', err);
+    res.status(500).json({ error: 'Failed to fetch rating distribution' });
+  }
+});
+
+router.get('/trips/:tripId/average-rating', async (req, res) => {
+  const { tripId } = req.params;
+  try {
+    const [rows] = await pool.query('CALL sp_get_trip_average_rating(?)', [tripId]);
+    res.json(rows[0][0]); 
+  } catch (err) {
+    console.error('Error fetching trip average rating:', err);
+    res.status(500).json({ error: 'Failed to fetch average rating' });
+  }
+});
+
+router.get('/trips/type/:type', async (req, res) => {
+  const { type } = req.params;
+
+  try {
+    const [rows] = await pool.query('CALL sp_get_trips_by_type(?)', [type]);
+    res.json(rows[0]); 
+  } catch (err) {
+    console.error('Error fetching trips by type:', err);
+    res.status(500).json({ error: 'Failed to fetch trips by type' });
   }
 });
 

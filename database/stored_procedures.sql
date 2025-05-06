@@ -75,14 +75,25 @@ END$$
 -- 3. Top 5 Most Booked Trips
 CREATE PROCEDURE sp_top_booked_trips()
 BEGIN
-    SELECT t.trip_name, COUNT(*) AS total_bookings
+    SELECT 
+        t.trip_id,
+        t.trip_name,
+        t.trip_type,
+        t.duration,
+        t.base_price,
+        t.avg_rating,
+        MIN(ht.price_per_night) AS min_hotel_price,
+        (t.base_price + MIN(ht.price_per_night) * t.duration) AS total_price,
+        COUNT(*) AS total_bookings
     FROM booking b
     JOIN trip t ON b.trip_id = t.trip_id
+    LEFT JOIN hotel_trip ht ON t.trip_id = ht.trip_id
     WHERE b.booking_status IN ('Confirmed', 'Completed')
-    GROUP BY b.trip_id
+    GROUP BY t.trip_id
     ORDER BY total_bookings DESC
     LIMIT 5;
 END$$
+
 
 -- 4. Predict Affordable Packages Under Budget
 CREATE PROCEDURE sp_affordable_trip_packages(IN p_budget DECIMAL(10,2))
@@ -90,6 +101,7 @@ BEGIN
     SELECT 
         t.trip_name,
         t.base_price,
+
         MIN(ht.price_per_night) AS min_hotel_price,
         (t.base_price + MIN(ht.price_per_night) * t.duration) AS estimated_total
     FROM trip t
@@ -100,19 +112,28 @@ BEGIN
 END$$
 
 -- 5. Predict Cheapest Travel Days
+DELIMITER $$
+
 CREATE PROCEDURE sp_predict_cheapest_travel_days()
 BEGIN
     SELECT 
+        t.trip_id,
         t.trip_name,
-        f.departure_datetime,
-        f.arrival_datetime,
-        f.price,
-        f.class
+        t.trip_type,
+        t.duration,
+        t.base_price,
+        t.avg_rating,
+        MIN(ht.price_per_night) AS min_hotel_price,
+        (t.base_price + MIN(ht.price_per_night) * t.duration) AS total_price
     FROM flight f
     JOIN trip t ON f.trip_id = t.trip_id
-    ORDER BY f.price ASC
+    JOIN hotel_trip ht ON t.trip_id = ht.trip_id
+    GROUP BY t.trip_id
+    ORDER BY total_price ASC
     LIMIT 5;
 END$$
+
+DELIMITER ;
 
 -- 6. Filter High-Rated Trips Only
 CREATE PROCEDURE sp_filter_high_rated_trips(IN p_min_rating INT)
@@ -120,10 +141,16 @@ BEGIN
     SELECT 
         t.trip_id,
         t.trip_name,
-        AVG(r.rating_score) AS avg_rating
+        t.trip_type,
+        t.duration,
+        t.base_price,
+        AVG(r.rating_score) AS avg_rating,
+        MIN(ht.price_per_night) AS min_hotel_price,
+        (t.base_price + MIN(ht.price_per_night) * t.duration) AS total_price
     FROM trip t
     JOIN booking b ON t.trip_id = b.trip_id
     JOIN rating r ON b.booking_id = r.booking_id
+    JOIN hotel_trip ht ON t.trip_id = ht.trip_id
     GROUP BY t.trip_id
     HAVING avg_rating >= p_min_rating
     ORDER BY avg_rating DESC;
@@ -178,14 +205,15 @@ BEGIN
 END$$
 
 -- 10. Get All Bookings for a Customer
-CREATE PROCEDURE sp_get_customer_bookings(IN p_customer_id INT)
-BEGIN
-    SELECT b.*, t.trip_name
-    FROM booking b
-    JOIN trip t ON b.trip_id = t.trip_id
-    WHERE b.customer_id = p_customer_id
-    ORDER BY b.start_date DESC;
-END$$
+-- CREATE PROCEDURE sp_get_customer_bookings(IN p_customer_id INT)
+-- BEGIN
+--     SELECT b.*, t.trip_name
+--     FROM booking b
+--     JOIN trip t ON b.trip_id = t.trip_id
+--     WHERE b.customer_id = p_customer_id
+--     ORDER BY b.start_date DESC;
+-- END$$
+
 
 -- 11. Get Customer's Total Spending
 CREATE PROCEDURE sp_get_total_spent(IN p_customer_id INT)
@@ -206,6 +234,27 @@ BEGIN
     UPDATE booking
     SET booking_status = p_new_status
     WHERE booking_id = p_booking_id;
+END$$
+
+-- 13. Get Trips by Type
+CREATE PROCEDURE sp_get_trips_by_type(IN p_type VARCHAR(50))
+BEGIN
+  SELECT 
+    t.trip_id,
+    t.trip_name,
+    t.trip_type,
+    t.duration,
+    t.base_price,
+    AVG(r.rating_score) AS avg_rating,
+    MIN(ht.price_per_night) AS min_hotel_price,
+    (t.base_price + MIN(ht.price_per_night) * t.duration) AS total_price
+  FROM trip t
+  LEFT JOIN hotel_trip ht ON t.trip_id = ht.trip_id
+  LEFT JOIN booking b ON t.trip_id = b.trip_id
+  LEFT JOIN rating r ON b.booking_id = r.booking_id
+  WHERE t.trip_type = p_type
+  GROUP BY t.trip_id
+  ORDER BY t.trip_name;
 END$$
 
 DELIMITER ;
