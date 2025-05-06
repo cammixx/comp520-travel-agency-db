@@ -1,141 +1,73 @@
 # Travel Agency Application
 
-A full-stack travel agency application built with React (frontend) and Express.js (backend).
+A modern web application for managing travel bookings, built with React and Node.js.
 
-## Project Structure
+## Features
 
-```
-travel-agency-app/
-├── client/                      # React frontend
-│   ├── public/                  # Static files
-│   │   ├── index.html
-│   │   └── assets/             # Images, fonts, etc.
-│   ├── src/
-│   │   ├── components/         # Reusable UI components
-│   │   │   ├── common/        # Shared components
-│   │   │   ├── layout/        # Layout components
-│   │   │   └── forms/         # Form components
-│   │   ├── pages/             # Page components
-│   │   ├── services/          # API services
-│   │   ├── utils/             # Utility functions
-│   │   ├── hooks/             # Custom React hooks
-│   │   ├── context/           # React context
-│   │   ├── styles/            # Global styles
-│   │   └── App.js             # Root component
-│   ├── package.json
-│   └── .env                    # Frontend environment variables
-│
-├── server/                      # Express.js backend
-│   ├── src/
-│   │   ├── config/            # Configuration files
-│   │   ├── controllers/       # Route controllers
-│   │   ├── middleware/        # Custom middleware
-│   │   ├── models/            # Database models
-│   │   ├── routes/            # API routes
-│   │   ├── services/          # Business logic
-│   │   ├── utils/             # Utility functions
-│   │   └── app.js             # Express app setup
-│   ├── tests/                 # Backend tests
-│   ├── package.json
-│   └── .env                    # Backend environment variables
-│
-├── .gitignore
-└── README.md
-```
+- Trip browsing and booking
+- Flight selection (departure and return)
+- Hotel booking
+- Travel insurance options
+- Customer information management
+- Booking confirmation and management
+
 
 ## Prerequisites
 
 - Node.js (v14 or higher)
 - npm or yarn
-- MySQL Server
-- MySQL Workbench (for database management)
+- PostgreSQL database
 
 ## Setup Instructions
 
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd travel-agency-app
-```
-
-### 2. Backend Setup
-
-1. Navigate to the server directory:
-```bash
-cd server
-```
+1. Clone the repository:
+   ```bash
+   git clone [repository-url]
+   cd travel-agency-app
+   ```
 
 2. Install dependencies:
-```bash
-npm install
-```
+   ```bash
+   # Install backend dependencies
+   cd server
+   npm install
 
-3. Create a `.env` file in the server directory with the following variables:
-```env
-PORT=5000
-DB_HOST=localhost
-DB_USER=your_mysql_username
-DB_PASSWORD=your_mysql_password
-DB_NAME=travel_agency
-```
+   # Install frontend dependencies
+   cd ../client
+   npm install
+   ```
 
-4. Set up the database:
-   - Open MySQL Workbench
-   - Create a new database named `travel_agency`
-   - Import the database schema (if provided)
+3. Set up environment variables:
+   - Create `.env` file in the server directory
+   - Add necessary environment variables (database connection, etc.)
 
-5. Start the server:
-```bash
-npm start
-```
+4. Start the development servers:
+   ```bash
+   # Start backend server (from server directory)
+   npm run dev
 
-The server will run on `http://localhost:5000`
+   # Start frontend server (from client directory)
+   npm start
+   ```
 
-### 3. Frontend Setup
+## Booking Process
 
-1. Open a new terminal and navigate to the client directory:
-```bash
-cd client
-```
+1. Select a trip from available options
+2. Choose departure and return flights
+3. Select a hotel
+4. Add travel insurance (optional)
+5. Enter customer information
+6. Confirm booking
 
-2. Install dependencies:
-```bash
-npm install
-```
+## Technologies Used
 
-3. Create a `.env` file in the client directory with the following variables:
-```env
-REACT_APP_API_URL=http://localhost:5000
-```
+- Frontend:
+  - React
+  - Axios for API calls
+  - Bootstrap for styling
 
-4. Start the development server:
-```bash
-npm start
-```
-
-The application will open in your browser at `http://localhost:3000`
-
-## Available Scripts
-
-### Backend (server directory)
-
-- `npm start` - Start the server
-- `npm run dev` - Start the server in development mode with nodemon
-- `npm test` - Run tests
-
-### Frontend (client directory)
-
-- `npm start` - Start the development server
-- `npm build` - Build the app for production
-- `npm test` - Run tests
-- `npm eject` - Eject from Create React App
-
-## Features
-
-- User authentication
-- Browse travel packages
-- Book flights and hotels
-- View booking history
-- Search and filter options
-- Responsive design
+- Backend:
+  - Node.js
+  - Express
+  - PostgreSQL
+  - Sequelize ORM
