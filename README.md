@@ -16,7 +16,8 @@ A modern web application for managing travel bookings, built with React and Node
 
 - Node.js (v14 or higher)
 - npm or yarn
-- PostgreSQL database
+- MySQL Server
+- MySQL Workbench (recommended for database management)
 
 ## Setup Instructions
 
@@ -38,10 +39,21 @@ A modern web application for managing travel bookings, built with React and Node
    ```
 
 3. Set up environment variables:
-   - Create `.env` file in the server directory
-   - Add necessary environment variables (database connection, etc.)
+   - Create `.env` file in the server directory with the following variables:
+   ```env
+   PORT=5050
+   DB_HOST=localhost
+   DB_USER=your_mysql_username
+   DB_PASSWORD=your_mysql_password
+   DB_NAME=travel_agency
+   ```
 
-4. Start the development servers:
+4. Set up the database:
+   - Open MySQL Workbench
+   - Create a new database named `travel_agency`
+   - Import the database schema (if provided)
+
+5. Start the development servers:
    ```bash
    # Start backend server (from server directory)
    npm run dev
@@ -69,5 +81,5 @@ A modern web application for managing travel bookings, built with React and Node
 - Backend:
   - Node.js
   - Express
-  - PostgreSQL
+  - MySQL
   - Sequelize ORM
