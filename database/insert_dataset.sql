@@ -172,3 +172,12 @@ INSERT INTO booking_hotel (booking_id, hotel_id) VALUES
 (8, 8),
 (9, 9),
 (10, 10);
+
+-- Insert data into the travel_insurance_option table
+INSERT INTO travel_insurance_option (provider_name, coverage_details, insurance_cost)
+VALUES
+  ('GlobalShield', 'Full coverage including COVID', 60.00),
+  ('QuickTravel', 'Medical and Delays', 35.00),
+  ('SafeTravel Co.', 'Includes trip cancellation, emergency medical coverage, and lost baggage.', 59.99),
+  ('TravelSafe', 'Full Trip Cover', 70.00),
+  ('TravelSafe', 'Medical + Trip Cancellation', 50.00);

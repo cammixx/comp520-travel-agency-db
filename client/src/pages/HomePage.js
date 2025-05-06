@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TripCard from '../components/TripCard';
-import { fetchTrips, fetchTopBookedTrips } from '../api/tripApi';
+import { fetchTrips, fetchTopBookedTrips, fetchAffordableTrips} from '../api/tripApi';
 
 function HomePage() {
   const [trips, setTrips] = useState([]);
   const [allTrips, setAllTrips] = useState([]);
   const [showTopBooked, setShowTopBooked] = useState(false);
   const navigate = useNavigate();
+  const [budget, setBudget] = useState('');
+  const [showCheapest, setShowCheapest] = useState(false);
 
   useEffect(() => {
     async function loadTrips() {
@@ -21,6 +23,11 @@ function HomePage() {
   const handleBookTrip = (tripId) => {
     navigate(`/book?tripId=${tripId}`);
   };
+  const handleAffordableSearch = async () => {
+    if (!budget) return;
+    const data = await fetchAffordableTrips(budget);
+    setTrips(data);
+  };
 
   const handleToggleTopBooked = async () => {
     if (showTopBooked) {
@@ -30,6 +37,20 @@ function HomePage() {
       setTrips(topBooked);
     }
     setShowTopBooked(!showTopBooked);
+  };
+  const handleCheapestTravelDays = async () => {
+    if (showCheapest) {
+      setTrips(allTrips);
+    } else {
+      try {
+        const res = await fetch('http://localhost:5050/api/trips/cheapest-days');
+        const data = await res.json();
+        setTrips(data);
+      } catch (err) {
+        console.error('Failed to fetch cheapest travel days:', err);
+      }
+    }
+    setShowCheapest(!showCheapest);
   };
 
   return (
@@ -44,6 +65,26 @@ function HomePage() {
           {showTopBooked ? 'Show All Trips' : 'Show Top 5 Booked Trips'}
         </button>
       </div>
+      <input
+        type="number"
+        placeholder="Enter budget"
+        value={budget}
+        onChange={(e) => setBudget(e.target.value)}
+        className="form-control w-auto"
+      />
+      <button
+        className="btn btn-outline-success"
+        onClick={handleAffordableSearch}
+      >
+        Show Affordable Trips
+      </button>
+
+      <button
+  className="btn btn-outline-primary"
+  onClick={handleCheapestTravelDays}
+>
+  {showCheapest ? 'Show All Trips' : 'Show Cheapest Travel Days'}
+</button>
 
       <div className="row">
         {trips.map((trip) => (

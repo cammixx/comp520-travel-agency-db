@@ -6,7 +6,10 @@ const pool = require('./db');
 // GET → returns all available trips
 router.get('/trips', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM view_trip_catalog');
+    const [rows] = await pool.query(`
+      SELECT *, (base_price * duration) AS total_price
+      FROM view_trip_catalog
+    `);
     res.json(rows);
   } catch (err) {
     console.error('Error fetching trips:', err);
@@ -28,7 +31,7 @@ router.get('/trips/top-booked', async (req, res) => {
 // GET → returns all available insurance options 
 router.get('/insurance-options', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM travel_insurance_option');
+    const [rows] = await pool.query('SELECT * FROM travel_insurance');
     res.json(rows);
   } catch (err) {
     console.error('Error fetching insurance options:', err);
@@ -212,6 +215,83 @@ router.post('/booking-hotel', async (req, res) => {
   } catch (err) {
     console.error('Error linking hotel to booking:', err);
     res.status(400).json({ success: false, error: err.message });
+  }
+});
+// returns flights by trip ID
+router.get('/hotels/by-trip/:tripId', async (req, res) => {
+  const { tripId } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM view_available_hotels_by_trip WHERE trip_id = ?`,
+      [tripId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching hotels:', err);
+    res.status(500).json({ error: 'Failed to fetch hotels for this trip' });
+  }
+});
+// returns hotels by trip ID
+router.get('/flights/by-trip/:tripId', async (req, res) => {
+  const { tripId } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM view_available_flights_by_trip WHERE trip_id = ?`, 
+      [tripId]);
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching flights:', err);
+    res.status(500).json({ error: 'Failed to fetch flights for this trip' });
+  }
+});
+//  returns top rated trips above a rating threshold
+router.get('/trips/top-rated/:minRating', async (req, res) => {
+  const { minRating } = req.params;
+  try {
+    const [rows] = await pool.query('CALL sp_filter_high_rated_trips(?)', [minRating]);
+    res.json(rows[0]); 
+  } catch (err) {
+    console.error('Error fetching top-rated trips:', err);
+    res.status(500).json({ error: 'Failed to fetch top-rated trips' });
+  }
+});
+
+// returns affordable trip packages under a budget
+router.get('/trips/affordable/:budget', async (req, res) => {
+  const { budget } = req.params;
+  try {
+    const [rows] = await pool.query('CALL sp_affordable_trip_packages(?)', [budget]);
+    res.json(rows[0]); 
+  } catch (err) {
+    console.error('Error fetching affordable trips:', err);
+    res.status(500).json({ error: 'Failed to fetch affordable trips' });
+  }
+});
+router.get('/trips/cheapest-days', async (req, res) => {
+  try {
+    const [rows] = await pool.query('CALL sp_predict_cheapest_travel_days()');
+    res.json(rows[0]); // unpack the result
+  } catch (err) {
+    console.error('Error fetching cheapest travel days:', err);
+    res.status(500).json({ error: 'Failed to fetch cheapest travel days' });
+  }
+});
+
+// returns booking details by confirmation code
+router.get('/bookings/by-code/:code', async (req, res) => {
+  const { code } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM view_booking_details WHERE confirmation_code = ?`,
+      [code]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'No booking found.' });
+    }
+    res.json({ success: true, booking: rows[0] });
+  } catch (err) {
+    console.error('❌ Lookup failed:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

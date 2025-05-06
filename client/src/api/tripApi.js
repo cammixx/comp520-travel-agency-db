@@ -31,6 +31,33 @@ export async function fetchTopBookedTrips() {
       return [];
     }
   }
+
+  export async function fetchFlightList(tripId = null) {
+    try {
+      const url = tripId 
+        ? `${API_URL}/flights/by-trip/${tripId}`
+        : `${API_URL}/flights`;
+      const res = await axios.get(url);
+      return res.data;
+    } catch (err) {
+      console.error('Error fetching flights:', err);
+      return [];
+    }
+  }
+  
+  export async function fetchHotelList(tripId = null) {
+    try {
+      const url = tripId 
+        ? `${API_URL}/hotels/by-trip/${tripId}`
+        : `${API_URL}/hotels`;
+      const res = await axios.get(url);
+      return res.data;
+    } catch (err) {
+      console.error('Error fetching hotels:', err);
+      return [];
+    }
+  }
+  
   
   export async function fetchInsuranceOptions() {
     try {
@@ -60,7 +87,7 @@ export async function fetchTopBookedTrips() {
 
   export async function fetchBookingByConfirmation(code) {
     try {
-      const res = await axios.get(`${API_URL}/bookings/confirmation/${code}`);
+      const res = await axios.get(`${API_URL}/bookings/by-code/${code}`);
       return res.data;
     } catch (err) {
       console.error('Fetch failed:', err);
@@ -77,3 +104,7 @@ export async function fetchTopBookedTrips() {
       return { success: false, error: err.response?.data?.message || 'Cancel error' };
     }
   }
+    export async function fetchAffordableTrips(budget) {
+      const res = await axios.get(`${API_URL}/trips/affordable/${budget}`);
+      return res.data;
+    }

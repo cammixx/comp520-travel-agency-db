@@ -159,6 +159,15 @@ CREATE TABLE travel_insurance (
     FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE CASCADE
 );
 
+-- Travel Insurance Option Table
+CREATE TABLE travel_insurance_option (
+    insurance_id INT PRIMARY KEY AUTO_INCREMENT,
+    provider_name VARCHAR(100) NOT NULL,
+    coverage_details TEXT,
+    insurance_cost DECIMAL(10, 2) NOT NULL CHECK (insurance_cost >= 0),
+    is_active BOOLEAN DEFAULT TRUE
+);
+
 -- Booking-Hotel Junction Table (Added to support trigger)
 CREATE TABLE booking_hotel (
     booking_id INT,

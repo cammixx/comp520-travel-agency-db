@@ -1,19 +1,3 @@
--- Show a customer’s bookings with relevant trip info
-CREATE OR REPLACE VIEW view_booking_summary AS
-SELECT
-    b.booking_id,
-    c.first_name,
-    c.last_name,
-    t.trip_name,
-    t.trip_type,
-    b.start_date,
-    b.end_date,
-    b.booking_status,
-    b.total_price
-FROM booking b
-JOIN customer c ON b.customer_id = c.customer_id
-JOIN trip t ON b.trip_id = t.trip_id
-ORDER BY b.start_date DESC;
 
 -- Shows all available trips, allowing customers to browse and search for trips in the "Trips" section of the GUI.
 CREATE OR REPLACE VIEW view_trip_catalog AS
@@ -76,24 +60,77 @@ JOIN booking b ON ti.booking_id = b.booking_id
 JOIN customer c ON b.customer_id = c.customer_id
 ORDER BY ti.insurance_cost DESC;
 
--- Shows user's trip itinerary, including flight and hotel details, for confirmed or completed bookings.
-CREATE OR REPLACE VIEW view_user_trip_itinerary AS
+-- Shows booking details by confirmation code
+CREATE OR REPLACE VIEW view_booking_details AS
 SELECT
+    b.booking_id,
+    b.confirmation_code,
+    b.start_date,
+    b.end_date,
+    b.booking_status,
+    b.total_price,
     c.first_name,
     c.last_name,
     t.trip_name,
-    GROUP_CONCAT(DISTINCT f.airline_name ORDER BY f.departure_datetime SEPARATOR ', ') AS airlines,
-    GROUP_CONCAT(DISTINCT DATE_FORMAT(f.departure_datetime, '%Y-%m-%d %H:%i') SEPARATOR ', ') AS departure_times,
-    GROUP_CONCAT(DISTINCT DATE_FORMAT(f.arrival_datetime, '%Y-%m-%d %H:%i') SEPARATOR ', ') AS arrival_times,
-    GROUP_CONCAT(DISTINCT h.name SEPARATOR ', ') AS hotels,
-    GROUP_CONCAT(DISTINCT h.city SEPARATOR ', ') AS hotel_cities,
-    GROUP_CONCAT(DISTINCT h.country SEPARATOR ', ') AS hotel_countries
+    t.trip_type,
+
+    -- Flight info (if booked)
+    f.airline_name,
+    f.flight_number,
+    f.departure_airport,
+    f.arrival_airport,
+    f.departure_datetime,
+    f.arrival_datetime,
+
+    -- Hotel info (if booked)
+    h.name AS hotel_name,
+    h.city AS hotel_city,
+    h.country AS hotel_country
+
 FROM booking b
 JOIN customer c ON b.customer_id = c.customer_id
 JOIN trip t ON b.trip_id = t.trip_id
-LEFT JOIN flight f ON f.trip_id = t.trip_id
-LEFT JOIN hotel_trip ht ON ht.trip_id = t.trip_id
-LEFT JOIN hotel h ON ht.hotel_id = h.hotel_id
-WHERE b.booking_status IN ('Confirmed', 'Completed')
-GROUP BY b.booking_id, c.first_name, c.last_name, t.trip_name
-ORDER BY b.start_date;
+
+-- Optional flight
+LEFT JOIN booking_flight bf ON b.booking_id = bf.booking_id
+LEFT JOIN flight f ON bf.flight_id = f.flight_id
+
+-- Optional hotel
+LEFT JOIN booking_hotel bh ON b.booking_id = bh.booking_id
+LEFT JOIN hotel h ON bh.hotel_id = h.hotel_id;
+
+-- Shows available flights by trip
+CREATE OR REPLACE VIEW view_available_flights_by_trip AS
+SELECT
+    f.flight_id,
+    f.trip_id,
+    t.trip_name,
+    f.airline_name,
+    f.flight_number,
+    f.departure_airport,
+    f.arrival_airport,
+    f.departure_datetime,
+    f.arrival_datetime,
+    f.price AS flight_price,
+    f.class AS flight_class
+FROM flight f
+JOIN trip t ON f.trip_id = t.trip_id
+ORDER BY t.trip_name, f.departure_datetime;
+
+-- Shows available hotels by trip
+CREATE OR REPLACE VIEW view_available_hotels_by_trip AS
+SELECT
+    ht.hotel_trip_id,
+    ht.trip_id,
+    t.trip_name,
+    h.hotel_id,
+    h.name AS hotel_name,
+    h.city,
+    h.country,
+    h.star_rating,
+    ht.room_type,
+    ht.price_per_night
+FROM hotel_trip ht
+JOIN hotel h ON ht.hotel_id = h.hotel_id
+JOIN trip t ON ht.trip_id = t.trip_id
+ORDER BY t.trip_name, h.star_rating DESC;

@@ -7,7 +7,8 @@ function TripCard({ trip, onBook }) {
         <h5 className="card-title text-success">{trip.trip_name}</h5>
         <p><strong>Type:</strong> {trip.trip_type}</p>
         <p><strong>Duration:</strong> {trip.duration} days</p>
-        <p><strong>Price:</strong>{' '}{trip.base_price ? `$${Number(trip.base_price).toFixed(2)}` : 'N/A'}</p>
+        <p><strong>Base Price:</strong> ${Number(trip.base_price).toFixed(2)}</p>
+        <p><strong>Total Price:</strong> ${Number(trip.total_price || trip.estimated_total).toFixed(2)}</p>
         <p>
           <strong>Rating:</strong>{" "}
           {trip.avg_rating && !isNaN(Number(trip.avg_rating))
