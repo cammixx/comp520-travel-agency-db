@@ -45,7 +45,7 @@ router.get('/bookings/by-code/:code', async (req, res) => {
   const { code } = req.params;
   try {
     const [bookingRows] = await pool.query(
-      `SELECT * FROM view_booking_details WHERE confirmation_code = ?`,
+      `SELECT * FROM booking WHERE confirmation_code = ?`,
       [code]
     );
 
@@ -251,6 +251,29 @@ router.get('/flights/by-trip/:tripId', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch flights for this trip' });
   }
 });
+
+// GET → returns all hotels
+router.get('/hotels', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM hotel');
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching hotels:', err);
+    res.status(500).json({ error: 'Failed to fetch hotels' });
+  }
+});
+
+// GET → returns all flights
+router.get('/flights', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM flight');
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching flights:', err);
+    res.status(500).json({ error: 'Failed to fetch flights' });
+  }
+});
+
 //  returns top rated trips above a rating threshold
 router.get('/trips/top-rated/:minRating', async (req, res) => {
   const { minRating } = req.params;
