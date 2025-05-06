@@ -17,16 +17,11 @@ yarn-error.log*
 
 # System files
 .DS_Store
-Thumbs.db
 
 # IDE/editor folders
 .vscode/
 .cursor/
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
 
 # Build output
 dist/
@@ -39,10 +34,10 @@ coverage/
 *.mwb
 *.bak
 
-# Optional: Ignore database dump files
-*.sql
+# Optional: Ignore database dump files (commented if .sql is versioned)
+# *.sql
 *.dump
 
-# Optional: Ignore OS and terminal files
+# OS/temp files
 *.swp
 *.tmp

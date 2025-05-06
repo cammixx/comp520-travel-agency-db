@@ -1,14 +1,14 @@
 # Dependencies
-/node_modules
-/.pnp
+node_modules
+.pnp
 .pnp.js
 
 # Testing
-/coverage
+coverage
 
 # Production
-/build
-/dist
+build
+dist
 
 # Environment files
 .env
@@ -31,7 +31,7 @@ yarn-error.log*
 .DS_Store
 *.pem
 
-# Optional npm cache directory
+# Optional npm cache
 .npm
 
 # Optional eslint cache
@@ -43,17 +43,9 @@ yarn-error.log*
 # Output of 'npm pack'
 *.tgz
 
-# Yarn Integrity file
+# Optional Yarn/TypeScript/Vercel (remove if unused)
 .yarn-integrity
-
-# TypeScript cache
 *.tsbuildinfo
-
-# Next.js
-.next/
-out/
-
-# Misc
-.DS_Store
-*.pem
-.vercel 
+.next
+out
+.vercel
