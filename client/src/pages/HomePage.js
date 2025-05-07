@@ -34,11 +34,18 @@ function HomePage() {
   const handleAffordableSearch = async () => {
     if (!budget) return;
     const data = await fetchAffordableTrips(budget);
-    const withParsedRatings = data.map(trip => ({
-      ...trip,
-      avg_rating: trip.avg_rating ? parseFloat(trip.avg_rating) : null,
+  
+    const enrichedTrips = data.map((trip, index) => ({
+      trip_id: trip.trip_id,
+      trip_name: trip.trip_name,
+      trip_type: trip.trip_type || 'N/A',
+      base_price: parseFloat(trip.estimated_total) || 0,
+      avg_rating: trip.avg_rating !== null && !isNaN(trip.avg_rating)
+        ? parseFloat(trip.avg_rating)
+        : null
     }));
-    setTrips(withParsedRatings);
+  
+    setTrips(enrichedTrips);
   };
 
   const handleTripTypeSearch = async () => {
@@ -152,8 +159,8 @@ function HomePage() {
       </div>
 
       <div className="row">
-        {trips.map((trip) => (
-          <div key={trip.trip_id} className="col-md-4 mb-4">
+        {trips.map((trip, index) => (
+          <div key={index} className="col-md-4 mb-4">
             <TripCard trip={trip} onBook={handleBookTrip} />
           </div>
         ))}

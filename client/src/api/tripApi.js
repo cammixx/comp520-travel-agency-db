@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:5050/api';
 
+// 1. Fetch all trips
 export async function fetchTrips() {
   try {
     const response = await axios.get(`${API_URL}/trips`);
@@ -11,7 +12,7 @@ export async function fetchTrips() {
     return [];
   }
 }
-
+// 2. Fetch top booked trips
 export async function fetchTopBookedTrips() {
   try {
     const response = await axios.get(`${API_URL}/trips/top-booked`);
@@ -21,7 +22,7 @@ export async function fetchTopBookedTrips() {
     return [];
   }
 }
-
+// 3. Fetch trip list
 export async function fetchTripList() {
   try {
     const res = await axios.get(`${API_URL}/trips`);
@@ -31,7 +32,7 @@ export async function fetchTripList() {
     return [];
   }
 }
-
+// 4. Fetch flight list
 export async function fetchFlightList() {
   try {
     const res = await axios.get(`${API_URL}/flights`);
@@ -45,7 +46,7 @@ export async function fetchFlightList() {
     return [];
   }
 }
-
+// 5. Fetch hotel list
 export async function fetchHotelList() {
   try {
     const res = await axios.get(`${API_URL}/hotels`);
@@ -55,6 +56,7 @@ export async function fetchHotelList() {
     return [];
   }
 }
+// 6. Fetch insurance options
 export async function fetchInsuranceOptions() {
   try {
     const res = await axios.get(`${API_URL}/insurance-options`);
@@ -64,7 +66,7 @@ export async function fetchInsuranceOptions() {
     return [];
   }
 }
-
+// 7. Create booking
 export async function createBooking(data) {
   try {
     const response = await axios.post(`${API_URL}/bookings`, {
@@ -81,10 +83,10 @@ export async function createBooking(data) {
     return response.data;
   } catch (error) {
     console.error('Booking failed:', error);
-    return { success: false, error: error.message || 'Unknown error' };
+    throw error;
   }
 }
-
+// 8. Fetch booking by confirmation code
 export async function fetchBookingByConfirmation(code) {
   try {
     const res = await axios.get(`${API_URL}/bookings/by-code/${code}`);
@@ -94,7 +96,7 @@ export async function fetchBookingByConfirmation(code) {
     return { success: false, error: err.response?.data?.message || 'Unknown error' };
   }
 }
-
+// 9. Cancel booking by confirmation code
 export async function cancelBookingByCode(code) {
   try {
     const res = await axios.post(`${API_URL}/bookings/cancel`, { confirmationCode: code });
@@ -104,7 +106,7 @@ export async function cancelBookingByCode(code) {
     return { success: false, error: err.response?.data?.message || 'Cancel error' };
   }
 }
-
+// 10. Fetch affordable trips
 export async function fetchAffordableTrips(budget) {
   try {
     const res = await axios.get(`${API_URL}/trips/affordable/${budget}`);
@@ -114,7 +116,7 @@ export async function fetchAffordableTrips(budget) {
     return [];
   }
 }
-
+// 11. Fetch top rated trips  
 export async function fetchTopRatedTrips(minRating) {
   try {
     const res = await fetch(`${API_URL}/trips/top-rated/${minRating}`);

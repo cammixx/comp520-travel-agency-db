@@ -83,13 +83,17 @@ END$$
 CREATE PROCEDURE sp_affordable_trip_packages(IN p_budget DECIMAL(10,2))
 BEGIN
     SELECT 
+        t.trip_id,
         t.trip_name,
-        t.base_price,
-
-        MIN(ht.price_per_night) AS min_hotel_price,
-        (t.base_price + MIN(ht.price_per_night) * t.duration) AS estimated_total
+        t.trip_type,
+        t.base_price AS estimated_total,
+        (
+            SELECT AVG(r.rating_score)
+            FROM rating r
+            JOIN booking b ON r.booking_id = b.booking_id
+            WHERE b.trip_id = t.trip_id
+        ) AS avg_rating
     FROM trip t
-    JOIN hotel_trip ht ON t.trip_id = ht.trip_id
     GROUP BY t.trip_id
     HAVING estimated_total <= p_budget
     ORDER BY estimated_total ASC;

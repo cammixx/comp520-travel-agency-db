@@ -6,6 +6,7 @@ function TripCard({ trip, onBook }) {
   const [showRatings, setShowRatings] = useState(false);
   const [allFeedback, setAllFeedback] = useState([]);
 
+  // Fetch all customer ratings
   useEffect(() => {
     axios.get('http://localhost:5050/api/customers_ratings')
       .then((res) => {
@@ -34,13 +35,12 @@ function TripCard({ trip, onBook }) {
     <div className="card h-100 shadow-sm">
       <div className="card-body">
         <h5 className="card-title text-success">{trip.trip_name}</h5>
-        <p><strong>Type:</strong> {trip.trip_type}</p>
-        <p><strong>Duration:</strong> {trip.duration} days</p>
+        <p><strong>Type:</strong> {trip.trip_type && trip.trip_type !== 'N/A' ? trip.trip_type : 'Not specified'}</p>
         <p><strong>Base Price:</strong> ${Number(trip.base_price).toFixed(2)}</p>
-        <p><strong>Total Price:</strong> ${Number(trip.total_price || trip.estimated_total).toFixed(2)}</p>
+       
         <p>
           <strong>Rating:</strong>{" "}
-          {trip.avg_rating && !isNaN(Number(trip.avg_rating))
+          {trip.avg_rating > 0
             ? Number(trip.avg_rating).toFixed(1)
             : "No ratings yet"}
         </p>

@@ -8,12 +8,17 @@ function BookingPage() {
   const tripIdFromUrl = query.get('tripId');
 
   const handleSubmit = async (data) => {
-    const result = await createBooking(data);
-    if (result.success) {
-      alert(`Booking confirmed! Please keep your confirmation code: ${result.confirmationCode}`);
-      // You could navigate to a confirmation page here
-    } else {
-      alert(`Booking failed: ${result.error}`);
+    try {
+      const result = await createBooking(data);
+      if (result.success) {
+        alert(`Booking confirmed! Please keep your confirmation code: ${result.confirmationCode}`);
+      } else {
+        alert(`Booking failed: ${result.message || result.error || 'An unexpected error occurred.'}`);
+      }
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || err.response?.data?.error || 'An unexpected error occurred.';
+      alert(`Booking failed: ${errorMessage}`);
     }
   };
 

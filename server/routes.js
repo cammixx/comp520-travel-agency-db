@@ -182,17 +182,17 @@ router.post('/bookings', async (req, res) => {
       }
     }
 
-    // 5. Link return flight (only if different)
-    if (returnFlightId && returnFlightId !== departureFlightId) {
-      try {
-        await conn.query(
-          `INSERT INTO booking_flight (booking_id, flight_id) VALUES (?, ?)`,
-          [booking_id, returnFlightId]
-        );
-      } catch (err) {
-        console.error('❌ Error inserting return flight:', err);
-      }
-    }
+    // 5. Link return flight (only if different)  
+    // if (returnFlightId && returnFlightId !== departureFlightId) {
+    //   try {
+    //     await conn.query(
+    //       `INSERT INTO booking_flight (booking_id, flight_id) VALUES (?, ?)`,
+    //       [booking_id, returnFlightId]
+    //     );
+    //   } catch (err) {
+    //     console.error('❌ Error inserting return flight:', err);
+    //   }
+    // }
 
     // 6. Insert payment record
     try {
@@ -215,6 +215,14 @@ router.post('/bookings', async (req, res) => {
     });
   } catch (err) {
     await conn.rollback();
+
+    if (err.code === 'ER_SIGNAL_EXCEPTION' && err.message.includes('overlapping dates')) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already booked this trip during the selected dates.',
+      });
+    }
+
     console.error('Booking error:', err);
     res.status(500).json({ success: false, error: err.message });
   } finally {
@@ -286,6 +294,11 @@ router.get('/hotels', async (req, res) => {
 // GET → returns all flights
 router.get('/flights', async (req, res) => {
   try {
+
+    await pool.query(`
+      UPDATE flight
+      SET is_return = (MOD(FLOOR(RAND() * 1000), 2) = 0)
+    `);
     const [rows] = await pool.query('SELECT * FROM view_available_flights_by_trip');
     const normalized = rows.map(flight => ({
       ...flight,

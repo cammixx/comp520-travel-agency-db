@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS rating;
 DROP TABLE IF EXISTS booking;
 DROP TABLE IF EXISTS trip;
 DROP TABLE IF EXISTS customer;
+DROP TABLE IF EXISTS agent;
 DROP TABLE IF EXISTS location;
 
 -- Customer Table
@@ -198,5 +199,8 @@ ALTER TABLE trip ADD COLUMN avg_rating DECIMAL(3,2);
 
 ALTER TABLE booking ADD COLUMN confirmation_code VARCHAR(20) UNIQUE;
 
-ALTER TABLE trip ADD COLUMN location_id INT;
-ALTER TABLE trip ADD CONSTRAINT fk_trip_location FOREIGN KEY (location_id) REFERENCES location(location_id);
+ALTER TABLE booking_flight ADD COLUMN is_return BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE flight ADD COLUMN is_return BOOLEAN NOT NULL DEFAULT FALSE;
+
+UPDATE flight SET is_return = TRUE WHERE MOD(flight_id, 2) = 0;

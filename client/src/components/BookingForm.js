@@ -26,6 +26,7 @@ function BookingForm({ onSubmit, preselectedTripId }) {
   const [phone, setPhone] = useState('');
   const [selectedTrip, setSelectedTrip] = useState(null);
 
+
   useEffect(() => {
     async function loadData() {
       const trips = await fetchTripList();
@@ -53,6 +54,26 @@ function BookingForm({ onSubmit, preselectedTripId }) {
 
     loadData();
   }, [preselectedTripId]);
+  // useEffect(() => {
+  //   if (departureFlightId && returnFlightId) {
+  //     const depFlight = flightList.find(f => f.flight_id === departureFlightId);
+  //     const retFlight = flightList.find(f => f.flight_id === returnFlightId);
+
+  //     if (depFlight && retFlight) {
+  //       if (depFlight.airline_name !== retFlight.airline_name) {
+  //         setAirlineWarning('Warning: Please reselect for a round trip with the same airline.');
+  //       } else if (depFlight.arrival_location_id !== retFlight.departure_location_id) {
+  //         setAirlineWarning('Warning: Return flight must depart from the city you arrived in.');
+  //       } else {
+  //         setAirlineWarning('');
+  //       }
+  //     } else {
+  //       setAirlineWarning('');
+  //     }
+  //   } else {
+  //     setAirlineWarning('');
+  //   }
+  // }, [departureFlightId, returnFlightId, flightList]);
 
   const handleTripSelection = async (id, list = tripList) => {
     setTripId(id);
@@ -67,10 +88,12 @@ function BookingForm({ onSubmit, preselectedTripId }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!departureFlightId || !returnFlightId || !selectedHotelId) {
-      alert("Please select both flights and a hotel before booking.");
+    // Flights: both or none
+    const flightSelected = departureFlightId || returnFlightId;
+    if (flightSelected && (!departureFlightId || !returnFlightId)) {
+      alert("Please select both departure and return flights if you want to include flights.");
       return;
     }
 
@@ -108,16 +131,24 @@ function BookingForm({ onSubmit, preselectedTripId }) {
     };
 
     console.log("🚀 Submitting booking payload:", bookingData);
-    onSubmit(bookingData);
+    const result = await onSubmit(bookingData);
+
+    if (result && result.success === false) {
+      alert(result.error || "Booking failed. Please check your airline/location selections.");
+      return;
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="p-3 border rounded shadow-sm bg-light">
       <h5>Trip Booking</h5>
+      <p><span style={{ color: 'red' }}>*</span> Required fields</p>
       {!preselectedTripId && (
         <div className="mb-3">
-          <label>Select Trip</label>
-          <select className="form-select" value={tripId} onChange={(e) => handleTripSelection(Number(e.target.value))}>
+          <label>
+            Select Trip <span style={{ color: 'red' }}>*</span>
+          </label>
+          <select className="form-select" value={tripId} onChange={(e) => handleTripSelection(Number(e.target.value))} required>
             <option value="">-- Choose a trip --</option>
             {tripList.map(trip => (
               <option key={trip.trip_id} value={trip.trip_id}>{trip.trip_name}</option>
@@ -128,29 +159,39 @@ function BookingForm({ onSubmit, preselectedTripId }) {
 
       {preselectedTripId && (
         <div className="mb-3">
-          <label>Trip</label>
+          <label>
+            Trip <span style={{ color: 'red' }}>*</span>
+          </label>
           <input type="text" className="form-control" value={tripName} readOnly />
         </div>
       )}
 
       <div className="row">
         <div className="col-md-6 mb-3">
-          <label>Start Date</label>
+          <label>
+            Start Date <span style={{ color: 'red' }}>*</span>
+          </label>
           <input type="date" className="form-control" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
         </div>
         <div className="col-md-6 mb-3">
-          <label>End Date</label>
+          <label>
+            End Date <span style={{ color: 'red' }}>*</span>
+          </label>
           <input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
         </div>
       </div>
 
       <div className="mb-3">
         <label>Departure Flight</label>
-        <select className="form-select" value={departureFlightId} onChange={e => setDepartureFlightId(Number(e.target.value))} required>
+        <select
+          className="form-select"
+          value={departureFlightId || ""}
+          onChange={e => setDepartureFlightId(e.target.value)}
+        >
           <option value="" disabled>-- Select Departure --</option>
           {flightList.map(f => (
             <option key={f.flight_id} value={f.flight_id}>
-              {f.airline_name} | {f.departure_city} → {f.arrival_city} | {new Date(f.departure_datetime).toLocaleDateString()} | ${f.price}
+              {f.airline_name}   | ${f.price}
             </option>
           ))}
         </select>
@@ -158,23 +199,28 @@ function BookingForm({ onSubmit, preselectedTripId }) {
 
       <div className="mb-3">
         <label>Return Flight</label>
-        <select className="form-select" value={returnFlightId} onChange={e => setReturnFlightId(Number(e.target.value))} required>
+        <select className="form-select" value={returnFlightId} onChange={e => setReturnFlightId(Number(e.target.value))} >
           <option value="" disabled>-- Select Return --</option>
-          {flightList.map(f => (
-            <option key={f.flight_id} value={f.flight_id}>
-              {f.airline_name} | {f.departure_city} → {f.arrival_city} | {new Date(f.departure_datetime).toLocaleDateString()} | ${f.price}
-            </option>
-          ))}
+          {flightList
+            .filter(f => {
+              const depFlight = flightList.find(df => df.flight_id === departureFlightId);
+              return !depFlight || f.departure_location_id === depFlight.arrival_location_id;
+            })
+            .map(f => (
+              <option key={f.flight_id} value={f.flight_id}>
+                {f.airline_name} | ${f.price}
+              </option>
+            ))}
         </select>
       </div>
 
       <div className="mb-3">
         <label>Hotel</label>
-        <select className="form-select" value={selectedHotelId} onChange={e => setSelectedHotelId(Number(e.target.value))} required>
-          <option value="" disabled>-- Select Hotel --</option>
+        <select className="form-select" value={selectedHotelId || ''} onChange={e => setSelectedHotelId(e.target.value ? Number(e.target.value) : null)} >
+          <option value="">-- Select Hotel --</option>
           {hotelList.map(h => (
             <option key={h.hotel_id} value={h.hotel_id}>
-              {h.name} - ${h.price_per_night}/night
+              {h.name} ${h.price_per_night}/night
             </option>
           ))}
         </select>
@@ -230,7 +276,9 @@ function BookingForm({ onSubmit, preselectedTripId }) {
       <h5>Contact Info</h5>
       <div className="row">
         <div className="col-md-4 mb-3">
-          <label>First Name</label>
+          <label>
+            First Name <span style={{ color: 'red' }}>*</span>
+          </label>
           <input className="form-control" value={firstName} onChange={e => setFirstName(e.target.value)} required />
         </div>
         <div className="col-md-4 mb-3">
@@ -238,18 +286,24 @@ function BookingForm({ onSubmit, preselectedTripId }) {
           <input className="form-control" value={middleName} onChange={e => setMiddleName(e.target.value)} />
         </div>
         <div className="col-md-4 mb-3">
-          <label>Last Name</label>
+          <label>
+            Last Name <span style={{ color: 'red' }}>*</span>
+          </label>
           <input className="form-control" value={lastName} onChange={e => setLastName(e.target.value)} required />
         </div>
       </div>
 
       <div className="mb-3">
-        <label>Email</label>
+        <label>
+          Email <span style={{ color: 'red' }}>*</span>
+        </label>
         <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required />
       </div>
 
       <div className="mb-3">
-        <label>Phone</label>
+        <label>
+          Phone <span style={{ color: 'red' }}>*</span>
+        </label>
         <input className="form-control" value={phone} onChange={e => setPhone(e.target.value)} required />
       </div>
 

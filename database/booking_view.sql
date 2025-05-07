@@ -1,4 +1,4 @@
--- Shows all available trips, allowing customers to browse and search for trips in the "Trips" section of the GUI.
+-- 1. Shows all available trips, allowing customers to browse and search for trips in the "Trips" section of the GUI.
 CREATE OR REPLACE VIEW view_trip_catalog AS
 SELECT 
     t.trip_id,
@@ -29,7 +29,7 @@ LEFT JOIN (
 ) AS r ON t.trip_id = r.trip_id
 ORDER BY t.trip_name;
 
--- Show customer reviews for trips
+-- 2. Show customer reviews for trips
 CREATE OR REPLACE VIEW view_customer_ratings AS
 SELECT
     r.rating_id,
@@ -45,7 +45,7 @@ JOIN customer c ON b.customer_id = c.customer_id -- safer FK path
 JOIN trip t ON b.trip_id = t.trip_id
 ORDER BY r.rating_date DESC;
 
--- Display available travel insurance tied to user bookings.
+-- 3. Display available travel insurance tied to user bookings.
 CREATE OR REPLACE VIEW view_available_insurance AS
 SELECT
     c.first_name,
@@ -59,7 +59,7 @@ JOIN booking b ON ti.booking_id = b.booking_id
 JOIN customer c ON b.customer_id = c.customer_id
 ORDER BY ti.insurance_cost DESC;
 
--- Shows booking details by confirmation code
+-- 4. Shows booking details by confirmation code
 CREATE OR REPLACE VIEW view_booking_details AS
 SELECT
     b.booking_id,
@@ -110,7 +110,7 @@ LEFT JOIN booking_hotel bh ON b.booking_id = bh.booking_id
 LEFT JOIN hotel h ON bh.hotel_id = h.hotel_id
 LEFT JOIN location loc ON h.location_id = loc.location_id;
 
--- Shows available flights by trip
+-- 5. Shows available flights by trip
 CREATE OR REPLACE VIEW view_available_flights_by_trip AS
 SELECT
     f.flight_id,
@@ -118,16 +118,12 @@ SELECT
     t.trip_name,
     f.airline_name,
     f.flight_number,
-    f.departure_airport,
-    f.arrival_airport,
-    f.departure_datetime,
-    f.arrival_datetime,
     f.price AS flight_price,
     f.class AS flight_class
 FROM flight f
 JOIN trip t ON f.trip_id = t.trip_id
+WHERE f.is_return = TRUE
 ORDER BY t.trip_name, f.departure_datetime;
-
 -- Shows available hotels by trip
 CREATE OR REPLACE VIEW view_available_hotels_by_trip AS
 SELECT
