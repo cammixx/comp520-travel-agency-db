@@ -1,9 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 function TripCard({ trip, onBook }) {
   const [ratingDist, setRatingDist] = useState([]);
   const [showRatings, setShowRatings] = useState(false);
+  const [allFeedback, setAllFeedback] = useState([]);
+
+  useEffect(() => {
+    axios.get('http://localhost:5050/api/customers_ratings')
+      .then((res) => {
+        setAllFeedback(res.data);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch customer ratings:', err);
+      });
+  }, []);
 
   const fetchRatings = async () => {
     try {
@@ -51,6 +62,18 @@ function TripCard({ trip, onBook }) {
             </ul>
           </div>
         )}
+        <div className="mt-3">
+          <h6>Customer Feedback:</h6>
+          <ul>
+            {allFeedback
+              .filter(f => f.trip_name === trip.trip_name)
+              .map((f, idx) => (
+                <li key={idx}>
+                  <strong>{f.first_name} {f.last_name}:</strong> {f.feedback}
+                </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

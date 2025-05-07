@@ -5,7 +5,7 @@ import RatingForm from '../components/RatingForm';
 function RateTripPage() {
   const handleSubmitRating = async ({ code, score, feedback }) => {
     try {
-      const res = await fetch(`http://localhost:5050/api/bookings/confirmation/${code}`);
+      const res = await fetch(`http://localhost:5050/api/bookings/by-code/${code}`);
       
       if (!res.ok) {
         const text = await res.text(); // read raw response
@@ -13,7 +13,7 @@ function RateTripPage() {
       }
   
       const booking = await res.json();
-      const ratingRes = await fetch('http://localhost:5050/api/ratings', {
+      const ratingRes = await fetch('http://localhost:5050/api/rating', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

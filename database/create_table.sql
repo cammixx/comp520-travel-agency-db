@@ -12,7 +12,6 @@ DROP TABLE IF EXISTS rating;
 DROP TABLE IF EXISTS booking;
 DROP TABLE IF EXISTS trip;
 DROP TABLE IF EXISTS customer;
-DROP TABLE IF EXISTS agent;
 DROP TABLE IF EXISTS location;
 
 -- Customer Table
@@ -71,15 +70,6 @@ CREATE TABLE location (
     city VARCHAR(100),
     country VARCHAR(100),
     region VARCHAR(100)
-);
-
--- Agent Table
-CREATE TABLE agent (
-    agent_id INT PRIMARY KEY AUTO_INCREMENT,
-    first_name VARCHAR(50),
-    last_name VARCHAR(50),
-    email VARCHAR(100) NOT NULL UNIQUE, 
-    phone VARCHAR(20)
 );
 
 -- Flight Table
@@ -207,3 +197,6 @@ ALTER TABLE hotel_trip ADD COLUMN room_capacity INT NOT NULL DEFAULT 50;
 ALTER TABLE trip ADD COLUMN avg_rating DECIMAL(3,2);
 
 ALTER TABLE booking ADD COLUMN confirmation_code VARCHAR(20) UNIQUE;
+
+ALTER TABLE trip ADD COLUMN location_id INT;
+ALTER TABLE trip ADD CONSTRAINT fk_trip_location FOREIGN KEY (location_id) REFERENCES location(location_id);

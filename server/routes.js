@@ -31,7 +31,7 @@ router.get('/trips/top-booked', async (req, res) => {
 // GET → returns all available insurance options 
 router.get('/insurance-options', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM travel_insurance');
+    const [rows] = await pool.query('SELECT * FROM travel_insurance_option');
     res.json(rows);
   } catch (err) {
     console.error('Error fetching insurance options:', err);
@@ -45,8 +45,8 @@ router.get('/bookings/by-code/:code', async (req, res) => {
   const { code } = req.params;
   try {
     const [bookingRows] = await pool.query(
-      `SELECT * FROM booking WHERE confirmation_code = ?`,
-      [code]
+      `SELECT * FROM view_booking_details WHERE confirmation_code = ?`,
+      [code ]
     );
 
     if (bookingRows.length === 0) {
@@ -106,31 +106,31 @@ router.post('/bookings/cancel', async (req, res) => {
 
 
 // POST → creates a new booking
+// POST → creates a new booking
 router.post('/bookings', async (req, res) => {
-  const pool = require('./db');
+  console.log("📦 Full booking payload:", req.body);
   const {
     tripId,
     startDate,
     endDate,
     insuranceId,
+    departureFlightId,
+    returnFlightId,
+    hotelId,
     customer
   } = req.body;
 
-
   const { firstName, middleName, lastName, email, phone } = customer;
-
 
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-
 
     // 1. Check if customer exists by email
     const [existingCustomer] = await conn.query(
       'SELECT customer_id FROM customer WHERE email = ?',
       [email]
     );
-
 
     let customerId;
     if (existingCustomer.length > 0) {
@@ -144,37 +144,74 @@ router.post('/bookings', async (req, res) => {
       customerId = result.insertId;
     }
 
-
-    // 2. Call stored procedure
+    // 2. Call stored procedure to add booking
     const [bookingResult] = await conn.query(
-      `CALL sp_add_booking_with_capacity_check(?, ?, ?, ?, ?)`,
-      [customerId, tripId, startDate, endDate, insuranceId || null]
+      `CALL sp_add_booking_with_capacity_check(?, ?, ?, ?, ?, ?)`,
+      [customerId, tripId, startDate, endDate, insuranceId || null, req.body.total_price || 0]
     );
 
+    const { booking_id, confirmation_code, total_price: sp_total_price } = bookingResult[0][0];
+    const final_total_price = typeof req.body.total_price === 'number' ? req.body.total_price : sp_total_price;
 
-    const { booking_id, confirmation_code, total_price } = bookingResult[0][0];
+    console.log('🧾 Booking created:', booking_id);
+    console.log('🏨 Hotel ID:', hotelId);
+    console.log('🛫 Departure Flight ID:', departureFlightId);
+    console.log('🛬 Return Flight ID:', returnFlightId);
 
-
-    // 3. Link insurance to the booking (optional)
-    if (insuranceId) {
-      await conn.query(
-        `INSERT INTO travel_insurance (booking_id, provider_name, coverage_details, insurance_cost)
-         SELECT ?, provider_name, coverage_details, insurance_cost
-         FROM travel_insurance_option
-         WHERE insurance_id = ?`,
-        [booking_id, insuranceId]
-      );
+    // 3. Link hotel
+    if (hotelId) {
+      try {
+        await conn.query(
+          `INSERT INTO booking_hotel (booking_id, hotel_id) VALUES (?, ?)`,
+          [booking_id, hotelId]
+        );
+      } catch (err) {
+        console.error('❌ Error inserting hotel:', err);
+      }
     }
 
+    // 4. Link departure flight
+    if (departureFlightId) {
+      try {
+        await conn.query(
+          `INSERT INTO booking_flight (booking_id, flight_id) VALUES (?, ?)`,
+          [booking_id, departureFlightId]
+        );
+      } catch (err) {
+        console.error('❌ Error inserting departure flight:', err);
+      }
+    }
+
+    // 5. Link return flight (only if different)
+    if (returnFlightId && returnFlightId !== departureFlightId) {
+      try {
+        await conn.query(
+          `INSERT INTO booking_flight (booking_id, flight_id) VALUES (?, ?)`,
+          [booking_id, returnFlightId]
+        );
+      } catch (err) {
+        console.error('❌ Error inserting return flight:', err);
+      }
+    }
+
+    // 6. Insert payment record
+    try {
+      await conn.query(
+        `INSERT INTO payment (booking_id, payment_method, payment_date, amount, payment_status)
+         VALUES (?, ?, CURDATE(), ?, ?)`,
+        [booking_id, 'Credit Card', final_total_price, 'Pending']
+      );
+    } catch (err) {
+      console.error('❌ Error inserting payment:', err);
+    }
 
     await conn.commit();
-
 
     res.status(200).json({
       success: true,
       bookingId: booking_id,
       confirmationCode: confirmation_code,
-      totalPrice: total_price
+      totalPrice: final_total_price
     });
   } catch (err) {
     await conn.rollback();
@@ -185,15 +222,32 @@ router.post('/bookings', async (req, res) => {
   }
 });
 
-
-// POST → adds a new rating for a booking
+// POST → adds a new rating for a booking use
 router.post('/rating', async (req, res) => {
-  const { booking_id, rating_score, feedback } = req.body;
+  const { bookingId, ratingScore, feedback } = req.body;
+  console.log('⛳ Inserting rating with:', {
+    bookingId,
+    ratingScore,
+    feedback,
+  });
+
   try {
-    const [result] = await pool.query(
-      'CALL sp_add_rating(?, ?, ?)',
-      [booking_id, rating_score, feedback]
+    const [bookingRows] = await pool.query(
+      `SELECT booking_id, customer_id FROM booking WHERE booking_id = ?`,
+      [bookingId]
     );
+
+    if (bookingRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Booking not found.' });
+    }
+
+    const { booking_id, customer_id } = bookingRows[0];
+
+    const [result] = await pool.query(
+      'CALL sp_add_rating(?, ?, ?, ?)',
+      [customer_id, booking_id, ratingScore, feedback]
+    );
+
     res.json({ success: true, message: 'Rating added successfully.' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -203,7 +257,6 @@ router.post('/rating', async (req, res) => {
 // POST → links a hotel to a booking
 router.post('/booking-hotel', async (req, res) => {
   const { bookingId, hotelId } = req.body;
-
 
   try {
     await pool.query(
@@ -218,44 +271,11 @@ router.post('/booking-hotel', async (req, res) => {
     res.status(400).json({ success: false, error: err.message });
   }
 });
-// returns flights by trip ID
-router.get('/hotels/by-trip/:tripId', async (req, res) => {
-  const { tripId } = req.params;
-  try {
-    const [rows] = await pool.query(
-      `SELECT h.hotel_id, h.name, h.city, ht.price_per_night
-       FROM hotel h
-       JOIN hotel_trip ht ON h.hotel_id = ht.hotel_id
-       WHERE ht.trip_id = ?`,
-      [tripId]
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error('Error fetching hotels:', err);
-    res.status(500).json({ error: 'Failed to fetch hotels for this trip' });
-  }
-});
-// returns hotels by trip ID
-router.get('/flights/by-trip/:tripId', async (req, res) => {
-  const { tripId } = req.params;
-  try {
-    const [rows] = await pool.query(
-      `SELECT flight_id, airline_name, flight_number, departure_datetime, arrival_datetime, price
-       FROM flight
-       WHERE trip_id = ?`,
-      [tripId]
-    );
-    res.json(rows);
-  } catch (err) {
-    console.error('Error fetching flights:', err);
-    res.status(500).json({ error: 'Failed to fetch flights for this trip' });
-  }
-});
 
 // GET → returns all hotels
 router.get('/hotels', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM hotel');
+    const [rows] = await pool.query('SELECT * FROM view_available_hotels_by_trip');
     res.json(rows);
   } catch (err) {
     console.error('Error fetching hotels:', err);
@@ -266,14 +286,18 @@ router.get('/hotels', async (req, res) => {
 // GET → returns all flights
 router.get('/flights', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM flight');
-    res.json(rows);
+    const [rows] = await pool.query('SELECT * FROM view_available_flights_by_trip');
+    const normalized = rows.map(flight => ({
+      ...flight,
+      price: Number(flight.flight_price) || 0
+    }));
+    res.json(normalized);
   } catch (err) {
     console.error('Error fetching flights:', err);
     res.status(500).json({ error: 'Failed to fetch flights' });
   }
 });
-
+ //use
 //  returns top rated trips above a rating threshold
 router.get('/trips/top-rated/:minRating', async (req, res) => {
   const { minRating } = req.params;
@@ -286,7 +310,7 @@ router.get('/trips/top-rated/:minRating', async (req, res) => {
   }
 });
 
-// returns affordable trip packages under a budget
+// returns affordable trip packages under a budget use
 router.get('/trips/affordable/:budget', async (req, res) => {
   const { budget } = req.params;
   try {
@@ -297,6 +321,7 @@ router.get('/trips/affordable/:budget', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch affordable trips' });
   }
 });
+//use
 router.get('/trips/cheapest-days', async (req, res) => {
   try {
     const [rows] = await pool.query('CALL sp_predict_cheapest_travel_days()');
@@ -306,7 +331,7 @@ router.get('/trips/cheapest-days', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch cheapest travel days' });
   }
 });
-
+//use
 router.get('/trips/:tripId/ratings', async (req, res) => {
   const { tripId } = req.params;
   try {
@@ -317,7 +342,7 @@ router.get('/trips/:tripId/ratings', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch rating distribution' });
   }
 });
-
+//use 
 router.get('/trips/:tripId/average-rating', async (req, res) => {
   const { tripId } = req.params;
   try {
@@ -328,7 +353,7 @@ router.get('/trips/:tripId/average-rating', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch average rating' });
   }
 });
-
+// use
 router.get('/trips/type/:type', async (req, res) => {
   const { type } = req.params;
 
@@ -338,6 +363,51 @@ router.get('/trips/type/:type', async (req, res) => {
   } catch (err) {
     console.error('Error fetching trips by type:', err);
     res.status(500).json({ error: 'Failed to fetch trips by type' });
+  }
+});
+// returns all customer ratings use
+router.get('/customers_ratings', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM view_customer_ratings');
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching booking details:', err);
+    res.status(500).json({ error: 'Failed to fetch booking details' });
+  }
+});
+
+// POST → mock complete an existing payment and mark booking completed
+router.post('/payments', async (req, res) => {
+  const { bookingId } = req.body;
+
+  if (!bookingId) {
+    return res.status(400).json({ success: false, message: 'Missing bookingId' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Update payment status to Completed
+    await conn.query(
+      `UPDATE payment SET payment_status = 'Completed' WHERE booking_id = ?`,
+      [bookingId]
+    );
+
+    // Update booking status to Completed
+    await conn.query(
+      `CALL sp_update_booking_status(?, ?)`,
+      [bookingId, 'Completed']
+    );
+
+    await conn.commit();
+    res.status(200).json({ success: true, message: 'Payment marked as completed and booking updated.' });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Error updating payment status:', err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    conn.release();
   }
 });
 

@@ -6,16 +6,14 @@ CREATE PROCEDURE sp_add_booking_with_capacity_check (
     IN p_trip_id INT,
     IN p_start_date DATE,
     IN p_end_date DATE,
-    IN p_insurance_id INT
+    IN p_insurance_id INT,
+    IN p_total_price DECIMAL(10,2)
 )
 BEGIN
     DECLARE trip_cap INT;
     DECLARE booked_count INT;
     DECLARE confirmation_code VARCHAR(20);
     DECLARE new_booking_id INT;
-    DECLARE base_price DECIMAL(10,2);
-    DECLARE insurance_cost DECIMAL(10,2) DEFAULT 0;
-    DECLARE total_price DECIMAL(10,2);
 
     -- Step 1: Check capacity
     SELECT capacity INTO trip_cap FROM trip WHERE trip_id = p_trip_id;
@@ -28,42 +26,28 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Cannot add booking: trip is fully booked.';
     ELSE
-        -- Step 2: Get base trip price
-        SELECT base_price INTO base_price FROM trip WHERE trip_id = p_trip_id;
-
-        -- Step 3: If insurance is selected, get its cost
-        IF p_insurance_id IS NOT NULL THEN
-            SELECT insurance_cost INTO insurance_cost
-            FROM travel_insurance
-            WHERE insurance_id = p_insurance_id;
-        END IF;
-
-        -- Step 4: Calculate total
-        SET total_price = base_price + insurance_cost;
-
-        -- Step 5: Generate confirmation code
+        -- Step 2: Generate confirmation code
         SET confirmation_code = UPPER(CONCAT(
           SUBSTRING(MD5(RAND()), 1, 4),
           SUBSTRING(MD5(RAND()), 1, 4)
         ));
 
-        -- Step 6: Insert booking
+        -- Step 3: Insert booking using provided total price
         INSERT INTO booking (
             customer_id, trip_id, start_date, end_date,
             booking_status, total_price, confirmation_code
         )
         VALUES (
             p_customer_id, p_trip_id, p_start_date, p_end_date,
-            'Confirmed', total_price, confirmation_code
+            'Pending', p_total_price, confirmation_code
         );
 
         SET new_booking_id = LAST_INSERT_ID();
 
-        -- Step 7: Return info
-        SELECT new_booking_id AS booking_id, confirmation_code, total_price;
+        -- Step 4: Return booking info
+        SELECT new_booking_id AS booking_id, confirmation_code, p_total_price AS total_price;
     END IF;
 END$$
-
 -- 2. Cancel Booking
 CREATE PROCEDURE sp_cancel_booking(IN p_booking_id INT)
 BEGIN

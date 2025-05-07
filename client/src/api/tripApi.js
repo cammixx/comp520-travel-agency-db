@@ -32,32 +32,29 @@ export async function fetchTripList() {
   }
 }
 
-export async function fetchFlightList(tripId = null) {
+export async function fetchFlightList() {
   try {
-    const url = tripId
-      ? `${API_URL}/flights/by-trip/${tripId}`
-      : `${API_URL}/flights`;
-    const res = await axios.get(url);
-    return res.data;
+    const res = await axios.get(`${API_URL}/flights`);
+    return res.data.map(flight => ({
+      ...flight,
+      flight_id: Number(flight.flight_id) || 0,
+      price: Number(flight.price) || 0
+    }));
   } catch (err) {
     console.error('Error fetching flights:', err);
     return [];
   }
 }
 
-export async function fetchHotelList(tripId = null) {
+export async function fetchHotelList() {
   try {
-    const url = tripId
-      ? `${API_URL}/hotels/by-trip/${tripId}`
-      : `${API_URL}/hotels`;
-    const res = await axios.get(url);
+    const res = await axios.get(`${API_URL}/hotels`);
     return res.data;
   } catch (err) {
     console.error('Error fetching hotels:', err);
     return [];
   }
 }
-
 export async function fetchInsuranceOptions() {
   try {
     const res = await axios.get(`${API_URL}/insurance-options`);
@@ -75,6 +72,10 @@ export async function createBooking(data) {
       startDate: data.startDate,
       endDate: data.endDate,
       insuranceId: data.insuranceId || null,
+      departureFlightId: data.departureFlightId || null,
+      returnFlightId: data.returnFlightId || null,
+      hotelId: data.hotelId || null,
+      total_price: data.total_price || 0,
       customer: data.customer
     });
     return response.data;

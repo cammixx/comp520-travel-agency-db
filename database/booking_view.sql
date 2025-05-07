@@ -1,4 +1,3 @@
-
 -- Shows all available trips, allowing customers to browse and search for trips in the "Trips" section of the GUI.
 CREATE OR REPLACE VIEW view_trip_catalog AS
 SELECT 
@@ -68,11 +67,22 @@ SELECT
     b.start_date,
     b.end_date,
     b.booking_status,
-    b.total_price,
+
+    -- Total price from booking only
+    b.total_price AS total_price,
+
+    -- Customer info
+    c.customer_id,
     c.first_name,
     c.last_name,
+
+    -- Trip info
     t.trip_name,
     t.trip_type,
+
+    -- Destination from hotel location
+    loc.city AS destination_city,
+    loc.country AS destination_country,
 
     -- Flight info (if booked)
     f.airline_name,
@@ -97,7 +107,8 @@ LEFT JOIN flight f ON bf.flight_id = f.flight_id
 
 -- Optional hotel
 LEFT JOIN booking_hotel bh ON b.booking_id = bh.booking_id
-LEFT JOIN hotel h ON bh.hotel_id = h.hotel_id;
+LEFT JOIN hotel h ON bh.hotel_id = h.hotel_id
+LEFT JOIN location loc ON h.location_id = loc.location_id;
 
 -- Shows available flights by trip
 CREATE OR REPLACE VIEW view_available_flights_by_trip AS

@@ -15,9 +15,8 @@ function BookingForm({ onSubmit, preselectedTripId }) {
   const [hotelList, setHotelList] = useState([]);
   const [tripId, setTripId] = useState(preselectedTripId || '');
   const [tripName, setTripName] = useState('');
-  const [selectedTrip, setSelectedTrip] = useState(null);
   const [selectedInsurance, setSelectedInsurance] = useState('');
-  const [selectedHotelId, setSelectedHotelId] = useState('');
+  const [selectedHotelId, setSelectedHotelId] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -25,6 +24,7 @@ function BookingForm({ onSubmit, preselectedTripId }) {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [selectedTrip, setSelectedTrip] = useState(null);
 
   useEffect(() => {
     async function loadData() {
@@ -38,7 +38,16 @@ function BookingForm({ onSubmit, preselectedTripId }) {
       setInsuranceList(insurance);
 
       if (preselectedTripId) {
-        handleTripSelection(Number(preselectedTripId), trips);
+        setTripId(Number(preselectedTripId));
+        const selected = trips.find(t => t.trip_id === Number(preselectedTripId));
+        if (selected) {
+          setTripName(selected.trip_name);
+          setSelectedTrip(selected);
+          const flights = await fetchFlightList(selected.trip_id);
+          const hotels = await fetchHotelList(selected.trip_id);
+          setFlightList(flights);
+          setHotelList(hotels);
+        }
       }
     }
 
@@ -60,14 +69,35 @@ function BookingForm({ onSubmit, preselectedTripId }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({
+    if (!departureFlightId || !returnFlightId || !selectedHotelId) {
+      alert("Please select both flights and a hotel before booking.");
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const days = Math.max((end - start) / (1000 * 60 * 60 * 24), 1);
+    const base = Number(selectedTrip?.base_price || 0);
+    const insurance = Number(selectedInsurance?.insurance_cost || 0);
+
+    const departureFlight = flightList.find(f => f.flight_id === departureFlightId);
+    const returnFlight = flightList.find(f => f.flight_id === returnFlightId);
+    const flightCost = (Number(departureFlight?.price) || 0) + (Number(returnFlight?.price) || 0);
+
+    const hotel = hotelList.find(h => h.hotel_id === selectedHotelId);
+    const hotelCost = Number(hotel?.price_per_night || 0) * days;
+
+    const total_price = base * days + insurance + flightCost + hotelCost;
+
+    const bookingData = {
       tripId,
       startDate,
       endDate,
       insuranceId: selectedInsurance?.insurance_id || null,
-      departureFlightId,
-      returnFlightId,
+      departureFlightId: departureFlightId || null,
+      returnFlightId: returnFlightId || null,
       hotelId: selectedHotelId || null,
+      total_price,
       customer: {
         firstName,
         middleName,
@@ -75,7 +105,10 @@ function BookingForm({ onSubmit, preselectedTripId }) {
         email,
         phone
       }
-    });
+    };
+
+    console.log("🚀 Submitting booking payload:", bookingData);
+    onSubmit(bookingData);
   };
 
   return (
@@ -113,8 +146,8 @@ function BookingForm({ onSubmit, preselectedTripId }) {
 
       <div className="mb-3">
         <label>Departure Flight</label>
-        <select className="form-select" value={departureFlightId} onChange={e => setDepartureFlightId(e.target.value)} required>
-          <option value="">-- Select Departure --</option>
+        <select className="form-select" value={departureFlightId} onChange={e => setDepartureFlightId(Number(e.target.value))} required>
+          <option value="" disabled>-- Select Departure --</option>
           {flightList.map(f => (
             <option key={f.flight_id} value={f.flight_id}>
               {f.airline_name} | {f.departure_city} → {f.arrival_city} | {new Date(f.departure_datetime).toLocaleDateString()} | ${f.price}
@@ -125,8 +158,8 @@ function BookingForm({ onSubmit, preselectedTripId }) {
 
       <div className="mb-3">
         <label>Return Flight</label>
-        <select className="form-select" value={returnFlightId} onChange={e => setReturnFlightId(e.target.value)} required>
-          <option value="">-- Select Return --</option>
+        <select className="form-select" value={returnFlightId} onChange={e => setReturnFlightId(Number(e.target.value))} required>
+          <option value="" disabled>-- Select Return --</option>
           {flightList.map(f => (
             <option key={f.flight_id} value={f.flight_id}>
               {f.airline_name} | {f.departure_city} → {f.arrival_city} | {new Date(f.departure_datetime).toLocaleDateString()} | ${f.price}
@@ -137,8 +170,8 @@ function BookingForm({ onSubmit, preselectedTripId }) {
 
       <div className="mb-3">
         <label>Hotel</label>
-        <select className="form-select" value={selectedHotelId} onChange={e => setSelectedHotelId(e.target.value)} required>
-          <option value="">-- Select Hotel --</option>
+        <select className="form-select" value={selectedHotelId} onChange={e => setSelectedHotelId(Number(e.target.value))} required>
+          <option value="" disabled>-- Select Hotel --</option>
           {hotelList.map(h => (
             <option key={h.hotel_id} value={h.hotel_id}>
               {h.name} - ${h.price_per_night}/night
@@ -165,6 +198,33 @@ function BookingForm({ onSubmit, preselectedTripId }) {
           ))}
         </select>
       </div>
+
+      {selectedTrip && startDate && endDate && (
+        <div className="mb-3">
+          <label><strong>Estimated Total Price:</strong></label>
+          <div className="form-control bg-light">
+            {(() => {
+              const start = new Date(startDate);
+              const end = new Date(endDate);
+              const days = Math.max((end - start) / (1000 * 60 * 60 * 24), 1);
+              const base = Number(selectedTrip.base_price || 0);
+              const insurance = Number(selectedInsurance?.insurance_cost || 0);
+
+              const departureFlight = flightList.find(f => f.flight_id === departureFlightId);
+              const returnFlight = flightList.find(f => f.flight_id === returnFlightId);
+              const flightCost =
+                (Number(departureFlight?.price) || 0) + (Number(returnFlight?.price) || 0);
+
+              const hotel = hotelList.find(h => h.hotel_id === selectedHotelId);
+              const hotelCost = Number(hotel?.price_per_night || 0) * days;
+
+              const total = base * days + insurance + flightCost + hotelCost;
+
+              return `$${total.toFixed(2)}`;
+            })()}
+          </div>
+        </div>
+      )}
 
       <hr />
       <h5>Contact Info</h5>

@@ -34,7 +34,11 @@ function HomePage() {
   const handleAffordableSearch = async () => {
     if (!budget) return;
     const data = await fetchAffordableTrips(budget);
-    setTrips(data);
+    const withParsedRatings = data.map(trip => ({
+      ...trip,
+      avg_rating: trip.avg_rating ? parseFloat(trip.avg_rating) : null,
+    }));
+    setTrips(withParsedRatings);
   };
 
   const handleTripTypeSearch = async () => {
@@ -42,7 +46,11 @@ function HomePage() {
     try {
       const res = await fetch(`http://localhost:5050/api/trips/type/${tripType}`);
       const data = await res.json();
-      setTrips(data);
+      const withParsedRatings = data.map(trip => ({
+        ...trip,
+        avg_rating: trip.avg_rating ? parseFloat(trip.avg_rating) : null,
+      }));
+      setTrips(withParsedRatings);
     } catch (err) {
       console.error('Failed to fetch trips by type:', err);
     }
@@ -53,7 +61,11 @@ function HomePage() {
       setTrips(allTrips);
     } else {
       const topBooked = await fetchTopBookedTrips();
-      setTrips(topBooked);
+      const withParsedRatings = topBooked.map(trip => ({
+        ...trip,
+        avg_rating: trip.avg_rating ? parseFloat(trip.avg_rating) : null,
+      }));
+      setTrips(withParsedRatings);
     }
     setShowTopBooked(!showTopBooked);
     setShowTopRated(false);
