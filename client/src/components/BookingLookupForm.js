@@ -103,7 +103,7 @@ function BookingLookupForm() {
             </p>
             <p><strong>Total Price:</strong> ${booking.total_price}</p>
             {booking.total_spent !== undefined && (
-              <p><strong>Remaining Balance:</strong> ${booking.total_spent}</p>
+              <p><strong>Amount Paid:</strong> ${booking.total_spent}</p>
             )}
             <p><strong>Status:</strong> {booking.booking_status}</p>
             <button
