@@ -100,8 +100,6 @@ BEGIN
 END$$
 
 -- 5. Predict Cheapest Travel Days
-DELIMITER $$
-
 CREATE PROCEDURE sp_predict_cheapest_travel_days()
 BEGIN
     SELECT 
@@ -120,8 +118,6 @@ BEGIN
     ORDER BY total_price ASC
     LIMIT 5;
 END$$
-
-DELIMITER ;
 
 -- 6. Filter High-Rated Trips Only
 CREATE PROCEDURE sp_filter_high_rated_trips(IN p_min_rating INT)
@@ -192,18 +188,7 @@ BEGIN
     GROUP BY t.trip_id;
 END$$
 
--- 10. Get All Bookings for a Customer
--- CREATE PROCEDURE sp_get_customer_bookings(IN p_customer_id INT)
--- BEGIN
---     SELECT b.*, t.trip_name
---     FROM booking b
---     JOIN trip t ON b.trip_id = t.trip_id
---     WHERE b.customer_id = p_customer_id
---     ORDER BY b.start_date DESC;
--- END$$
-
-
--- 11. Get Customer's Total Spending
+-- 10. Get Customer's Total Spending
 CREATE PROCEDURE sp_get_total_spent(IN p_customer_id INT)
 BEGIN
     SELECT c.first_name, c.last_name, SUM(b.total_price) AS total_spent
@@ -213,7 +198,7 @@ BEGIN
     GROUP BY c.customer_id;
 END$$
 
--- 12. Manually Update Booking Status
+-- 11. Manually Update Booking Status
 CREATE PROCEDURE sp_update_booking_status(
     IN p_booking_id INT,
     IN p_new_status VARCHAR(50)
@@ -224,7 +209,7 @@ BEGIN
     WHERE booking_id = p_booking_id;
 END$$
 
--- 13. Get Trips by Type
+-- 12. Get Trips by Type
 CREATE PROCEDURE sp_get_trips_by_type(IN p_type VARCHAR(50))
 BEGIN
   SELECT 
